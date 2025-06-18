@@ -395,15 +395,26 @@ def create_optimal_polygons(assignments_df, zip_db_df):
 
 
 def create_visualization_html(polygons_df, zip_coordinates, assignments_df):
-    """Create HTML visualization using folium - matches original script output."""
+    """Create HTML visualization using folium - fixed import handling."""
+    
+    # Check if folium is available
+    folium_available = False
     try:
         import folium
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
+        folium_available = True
+    except ImportError:
+        pass
+    
+    if not folium_available:
+        st.warning("Folium library is not available. Map visualization cannot be created.")
+        return None
+    
+    # Import other required modules
+    try:
         from branca.element import Element
         from shapely.geometry import MultiPoint
-    except ImportError:
-        st.error("Folium not installed. Cannot create visualization.")
+    except ImportError as e:
+        st.warning(f"Required library not available: {e}")
         return None
 
     # Center map
@@ -709,18 +720,16 @@ if assignments_file and zip_db_file:
                         if html_content:
                             st.components.v1.html(html_content, height=600)
                         else:
-                            st.warning("Could not create visualization. Folium library may not be available.")
+                            st.info("Visualization could not be created. The app will continue without the map.")
                     except Exception as e:
-                        st.error(f"Visualization error: {str(e)}")
+                        st.warning(f"Visualization error: {str(e)}. The app will continue without the map.")
 
                 # Download section
                 st.header("📥 Download Results")
 
-
                 # Prepare downloads
                 def to_csv(df):
                     return df.to_csv(index=False).encode('utf-8')
-
 
                 col1, col2 = st.columns(2)
 
@@ -811,5 +820,22 @@ with st.sidebar:
     1. Polygon boundaries CSV
     2. Covered ZIPs CSV  
     3. Uncovered ZIPs CSV
-    4. Interactive HTML map
+    4. Interactive HTML map (if Folium is available)
     """)
+
+    # Display library status
+    st.header("📚 Library Status")
+    
+    # Check Folium
+    try:
+        import folium
+        st.success("✅ Folium: Available")
+    except ImportError:
+        st.error("❌ Folium: Not Available")
+    
+    # Check Branca
+    try:
+        import branca
+        st.success("✅ Branca: Available") 
+    except ImportError:
+        st.error("❌ Branca: Not Available")
